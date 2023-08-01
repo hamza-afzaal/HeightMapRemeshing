@@ -83,8 +83,8 @@ int main(int argc, char **argv) {
     int h = hm->Height();
     if (w * h == 0) {
         std::cerr
-            << "invalid heightmap file (try png, jpg, etc.)" << std::endl
-            << p.usage();
+            << "invalid heightmap file (try png, jpg, etc.)" << std::endl;
+            //<< p.usage();
         std::exit(1);
     }
 
