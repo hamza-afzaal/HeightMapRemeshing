@@ -8,6 +8,7 @@
 #include "heightmap.h"
 #include "stl.h"
 #include "triangulator.h"
+#include "ply.h"
 
 int main(int argc, char **argv) {
     const auto startTime = std::chrono::steady_clock::now();
@@ -31,6 +32,9 @@ int main(int argc, char **argv) {
     p.add<float>("border-height", '\0', "border z height", false, 1);
     p.add<std::string>("normal-map", '\0', "path to write normal map png", false, "");
     p.add("quiet", 'q', "suppress console output");
+    p.add("txtmode", 'm', "text input mode");
+    // p.add("sepbase", '\0', "base as separate model");
+    p.add<std::string>("sepbasepath", '\0', "path for base model");
     p.footer("infile outfile.stl");
     p.parse_check(argc, argv);
 
@@ -56,7 +60,8 @@ int main(int argc, char **argv) {
     const float borderHeight = p.get<float>("border-height");
     const std::string normalmapPath = p.get<std::string>("normal-map");
     const bool quiet = p.exist("quiet");
-
+    const bool txtMode = p.exist("txtmode");
+    const std::string sepbasepath = p.get<std::string>("sepbasepath");
     // helper function to display elapsed time of each step
     const auto timed = [quiet](const std::string &message)
         -> std::function<void()>
@@ -76,14 +81,18 @@ int main(int argc, char **argv) {
 
     // load heightmap
     auto done = timed("loading heightmap");
-    const auto hm = std::make_shared<Heightmap>(inFile);
+    std::shared_ptr<Heightmap> hm;
+    if (txtMode)
+        hm = std::make_shared<Heightmap>(inFile, 0);
+    else 
+        hm = std::make_shared<Heightmap>(inFile);
     done();
 
     int w = hm->Width();
     int h = hm->Height();
     if (w * h == 0) {
         std::cerr
-            << "invalid heightmap file (try png, jpg, etc.)" << std::endl;
+            << "invalid heightmap file (try png, jpg etc.)" << std::endl;
             //<< p.usage();
         std::exit(1);
     }
@@ -132,11 +141,18 @@ int main(int argc, char **argv) {
     auto triangles = tri.Triangles();
     done();
 
+    std::vector<glm::vec3> pts;
+    std::vector<glm::ivec3> tris;
+
     // add base
     if (baseHeight > 0) {
         done = timed("adding solid base");
         const float z = -baseHeight * zScale * zExaggeration;
-        AddBase(points, triangles, w, h, z);
+        if (sepbasepath != "")
+            AddBase(points, triangles, pts, tris, w, h, z);
+        else
+            AddBase(points, triangles, w, h, z);
+
         done();
     }
 
@@ -152,6 +168,8 @@ int main(int argc, char **argv) {
     // write output file
     done = timed("writing output");
     SaveBinarySTL(outFile, points, triangles);
+    if (sepbasepath != "")
+        SaveBinarySTL(sepbasepath, pts, tris);
     done();
 
     // compute normal map

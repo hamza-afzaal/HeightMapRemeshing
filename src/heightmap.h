@@ -9,6 +9,8 @@ class Heightmap {
 public:
     Heightmap(const std::string &path);
 
+    Heightmap(const std::string &path, int mode);
+
     Heightmap(
         const int width,
         const int height,

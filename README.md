@@ -79,7 +79,7 @@ can try these examples yourself with this heightmap: [gale.png](https://www.mich
 
 ![Visual Guide](https://www.michaelfogleman.com/static/hmm/guide/all.png)
 
-### Z Scale
+### Z Scale// 
 
 The required `-z` parameter defines the distance between a fully black pixel
 and a fully white pixel in the vertical Z axis, with units equal to one pixel

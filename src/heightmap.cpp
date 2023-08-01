@@ -11,6 +11,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include <fstream>
+#include <regex>
+
 Heightmap::Heightmap(const std::string &path) :
     m_Width(0),
     m_Height(0)
@@ -29,6 +32,65 @@ Heightmap::Heightmap(const std::string &path) :
         m_Data[i] = data[i] * m;
     }
     free(data);
+}
+
+Heightmap::Heightmap(const std::string &path, int scale) : m_Width(0), m_Height(0)
+{
+    
+    std::string result;
+    std::ifstream inputStream;
+    inputStream.open(path, std::ios::in);
+
+    if (inputStream)
+    {
+        while(!inputStream.eof())
+        {
+            std::string out;
+            std::getline(inputStream, out);
+            result += out + ";";
+        }
+            
+        inputStream.close();
+
+        // removing whitespace from the result
+        result.erase(std::remove_if(result.begin(), result.end(), 
+        [](unsigned char x) {
+            return std::isspace(x);
+        }), result.end());
+
+        std::vector<std::string> row_split;
+        
+        std::regex rgx(";");
+        std::sregex_token_iterator itr(result.begin(), result.end(), rgx, -1);
+        std::sregex_token_iterator fin;
+
+        for (; itr != fin; itr++)
+        {
+            if (*itr != "")
+                row_split.push_back(*itr);
+        }
+
+        m_Height = row_split.size();
+
+        int n = 0;
+        for (auto row : row_split)
+        {
+            rgx = std::regex(",");
+            itr = std::sregex_token_iterator(row.begin(), row.end(), rgx, -1);
+            
+            if (m_Width == 0)
+            {
+                m_Width = std::distance(itr, fin);
+                m_Data.resize(m_Height * m_Width);
+            }
+            
+            for (; itr != fin; itr++, n++)
+            {
+                m_Data[n] = std::stof(*itr);
+            }
+        }
+
+    }
 }
 
 Heightmap::Heightmap(
